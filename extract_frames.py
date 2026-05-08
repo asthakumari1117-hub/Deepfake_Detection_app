@@ -1,54 +1,115 @@
-import cv2
 import os
+import cv2
 
-# Video path
-video_path = "videos/Original/000.mp4"
+# =========================
+# REAL VIDEO FOLDER
+# =========================
 
-# Create output folder
-output_folder = "frames"
+real_videos_folder = "videos/original"
 
-os.makedirs(output_folder, exist_ok=True)
+# =========================
+# FAKE VIDEO FOLDERS
+# =========================
 
-# Open video
-cap = cv2.VideoCapture(video_path)
+fake_folders = [
+    "videos/DeepFakeDetection",
+    "videos/Face2Face",
+    "videos/FaceSwap",
+    "videos/FaceShifter",
+    "videos/NeuralTextures"
+]
 
-# Check video opened
-if not cap.isOpened():
-    print("Error Opening Video")
-    exit()
+# =========================
+# OUTPUT FRAME FOLDERS
+# =========================
 
-# Video info
-fps = cap.get(cv2.CAP_PROP_FPS)
-total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+real_output_folder = "processed_dataset/real"
+fake_output_folder = "processed_dataset/fake"
 
-print("FPS:", fps)
-print("Total Frames:", total_frames)
+os.makedirs(real_output_folder, exist_ok=True)
+os.makedirs(fake_output_folder, exist_ok=True)
 
-frame_count = 0
+# =========================
+# FRAME SKIP
+# =========================
 
-frame_skip = 30
+frame_skip = 5
 
-while True:
+# =========================
+# FRAME EXTRACTION FUNCTION
+# =========================
 
-    ret, frame = cap.read()
+def extract_frames(video_folder, output_folder, label):
 
-    if not ret:
-        break
+    video_files = os.listdir(video_folder)
 
-    # Save only every 5th frame
-    if frame_count % frame_skip == 0:
+    print(f"\nTotal {label} Videos in {video_folder}: {len(video_files)}")
 
-        frame_path = os.path.join(
-            output_folder,
-            f"frame_{frame_count}.jpg"
-        )
+    for video_name in video_files:
 
-        cv2.imwrite(frame_path, frame)
+        video_path = os.path.join(video_folder, video_name)
 
-        print(f"Saved: {frame_path}")
+        # Skip non-video files
+        if not video_name.lower().endswith((".mp4", ".avi", ".mov", ".mkv")):
+            continue
 
-    frame_count += 1
+        cap = cv2.VideoCapture(video_path)
 
-cap.release()
+        frame_count = 0
+        saved_count = 0
 
-print("Frame Extraction Completed")
+        print(f"\nProcessing {label} Video: {video_name}")
+
+        while True:
+
+            ret, frame = cap.read()
+
+            if not ret:
+                break
+
+            # Save every nth frame
+            if frame_count % frame_skip == 0:
+
+                frame_filename = (
+                    f"{video_name.split('.')[0]}"
+                    f"_frame_{frame_count}.jpg"
+                )
+
+                frame_path = os.path.join(
+                    output_folder,
+                    frame_filename
+                )
+
+                cv2.imwrite(frame_path, frame)
+
+                saved_count += 1
+
+            frame_count += 1
+
+        cap.release()
+
+        print(f"{label} Saved Frames: {saved_count}")
+
+# =========================
+# PROCESS REAL VIDEOS
+# =========================
+
+extract_frames(
+    real_videos_folder,
+    real_output_folder,
+    "REAL"
+)
+
+# =========================
+# PROCESS ALL FAKE VIDEOS
+# =========================
+
+for fake_folder in fake_folders:
+
+    extract_frames(
+        fake_folder,
+        fake_output_folder,
+        "FAKE"
+    )
+
+print("\nALL FRAME EXTRACTION COMPLETED")

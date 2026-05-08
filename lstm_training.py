@@ -112,7 +112,9 @@ class DeepfakeLSTM(nn.Module):
 
             num_layers=2,
 
-            batch_first=True
+            batch_first=True,
+
+            dropout=0.3
 
         )
 
@@ -149,7 +151,7 @@ optimizer = torch.optim.Adam(
 
     model.parameters(),
 
-    lr=0.0001
+    lr=0.0003
 
 )
 
@@ -157,7 +159,7 @@ optimizer = torch.optim.Adam(
 # TRAINING
 # -----------------------------
 
-epochs = 10
+epochs = 25
 
 print("\nTraining Started")
 

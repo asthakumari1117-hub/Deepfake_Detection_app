@@ -2,72 +2,129 @@ import os
 import cv2
 from facenet_pytorch import MTCNN
 
-# Input frames folder
-frames_folder = "frames"
+# =========================
+# INPUT FRAME FOLDERS
+# =========================
 
-# Output faces folder
-faces_folder = "faces"
+real_frames_folder = "processed_dataset/real"
+fake_frames_folder = "processed_dataset/fake"
 
-os.makedirs(faces_folder, exist_ok=True)
+# =========================
+# OUTPUT FACE FOLDERS
+# =========================
 
-# Load MTCNN model
+real_faces_folder = "processed_faces/real"
+fake_faces_folder = "processed_faces/fake"
+
+os.makedirs(real_faces_folder, exist_ok=True)
+os.makedirs(fake_faces_folder, exist_ok=True)
+
+# =========================
+# LOAD MTCNN MODEL
+# =========================
+
 mtcnn = MTCNN()
 
-# Read all frame images
-frame_files = os.listdir(frames_folder)
+# =========================
+# FACE DETECTION FUNCTION
+# =========================
 
-print("Total Frames Found:", len(frame_files))
+def detect_faces(input_folder, output_folder, label):
 
-for frame_name in frame_files:
+    frame_files = os.listdir(input_folder)
 
-    frame_path = os.path.join(frames_folder, frame_name)
+    print(f"\nTotal {label} Frames Found:", len(frame_files))
 
-    # Read image
-    frame = cv2.imread(frame_path)
+    for frame_name in frame_files:
 
-    if frame is None:
-        continue
+        frame_path = os.path.join(input_folder, frame_name)
 
-    # Convert BGR to RGB
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Read image
+        frame = cv2.imread(frame_path)
 
-    # Detect face
-    boxes, _ = mtcnn.detect(rgb_frame)
+        if frame is None:
+            continue
 
-    # If face detected
-    if boxes is not None:
+        # Convert BGR to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        for i, box in enumerate(boxes):
+        # Detect faces
+        boxes, _ = mtcnn.detect(rgb_frame)
 
-            x1, y1, x2, y2 = box.astype(int)
+        # If face detected
+        if boxes is not None:
 
-            # Draw rectangle
-            cv2.rectangle(
-                frame,
-                (x1, y1),
-                (x2, y2),
-                (0, 255, 0),
-                2
-            )
+            for i, box in enumerate(boxes):
 
-            # Crop face
-            face = frame[y1:y2, x1:x2]
+                x1, y1, x2, y2 = box.astype(int)
 
-            # Save cropped face
-            face_path = os.path.join(
-                faces_folder,
-                f"{frame_name}_face_{i}.jpg"
-            )
+                # =========================
+                # REMOVE SMALL FALSE FACES
+                # =========================
 
-            cv2.imwrite(face_path, face)
+                width = x2 - x1
+                height = y2 - y1
 
-    # Show frame
-    cv2.imshow("Face Detection", frame)
+                # Ignore tiny detections
+                if width < 80 or height < 80:
+                    continue
 
-    # Press Q to quit
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+                # Prevent negative coordinates
+                x1 = max(0, x1)
+                y1 = max(0, y1)
+
+                # Draw rectangle
+                cv2.rectangle(
+                    frame,
+                    (x1, y1),
+                    (x2, y2),
+                    (0, 255, 0),
+                    2
+                )
+
+                # Crop face
+                face = frame[y1:y2, x1:x2]
+
+                if face.size == 0:
+                    continue
+
+                # Save cropped face
+                face_path = os.path.join(
+                    output_folder,
+                    f"{frame_name}_face_{i}.jpg"
+                )
+
+                cv2.imwrite(face_path, face)
+
+                print(f"{label} Face Saved:", face_path)
+
+        # Show detection result
+        cv2.imshow(f"{label} Face Detection", frame)
+
+        # Press Q to quit
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+# =========================
+# PROCESS REAL FRAMES
+# =========================
+
+detect_faces(
+    real_frames_folder,
+    real_faces_folder,
+    "REAL"
+)
+
+# =========================
+# PROCESS FAKE FRAMES
+# =========================
+
+detect_faces(
+    fake_frames_folder,
+    fake_faces_folder,
+    "FAKE"
+)
 
 cv2.destroyAllWindows()
 
-print("Face Detection Completed")               
+print("\nALL FACE DETECTION COMPLETED")

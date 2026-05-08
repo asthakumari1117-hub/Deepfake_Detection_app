@@ -60,7 +60,7 @@ for video_name in os.listdir(real_folder):
             break
 
         # Every 10th frame
-        if frame_count % 30 == 0:
+        if frame_count % 10 == 0:
 
             save_name = (
                 f"REAL_{video_name[:-4]}"
@@ -113,7 +113,7 @@ for folder in fake_folders:
             if not ret:
                 break
 
-            if frame_count % 30 == 0:
+            if frame_count % 10 == 0:
 
                 save_name = (
                     f"{folder}_{video_name[:-4]}"

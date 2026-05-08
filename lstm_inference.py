@@ -137,7 +137,7 @@ while True:
         break
 
     # Every 30th frame
-    if frame_count % 30 == 0:
+    if frame_count % 10 == 0:
 
         rgb = cv2.cvtColor(
             frame,

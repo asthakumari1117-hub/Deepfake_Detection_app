@@ -155,7 +155,7 @@ if uploaded_file is not None:
                     break
 
                 # Every 30th Frame
-                if frame_count % 30 == 0:
+                if frame_count % 10 == 0:
 
                     rgb = cv2.cvtColor(
                         frame,
@@ -282,13 +282,13 @@ if uploaded_file is not None:
 
                 fake_ratio = fake_sequences / total
 
-                if fake_ratio > 0.70:
+                if fake_ratio > 0.75:
 
                     st.error(
                         "🚨 FAKE VIDEO DETECTED"
                     )
 
-                elif fake_ratio < 0.30:
+                elif fake_ratio < 0.25:
 
                     st.success(
                         "✅ REAL VIDEO DETECTED"
