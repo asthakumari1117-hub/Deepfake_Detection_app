@@ -1,0 +1,14 @@
+venv/
+videos/
+processed_dataset/
+processed_faces/
+final_faces/
+dataset_features/
+
+*.pth
+*.npy
+*.mp4
+*.jpg
+*.png
+
+__pycache__/
