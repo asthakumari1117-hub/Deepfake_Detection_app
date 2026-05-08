@@ -274,15 +274,34 @@ if uploaded_file is not None:
                 f"Fake Percentage: {fake_percent:.2f}%"
             )
 
-            # FINAL RESULT
-            if fake_sequences > real_sequences:
+            # -----------------------------
+            # IMPROVED FINAL RESULT
+            # -----------------------------
 
-                st.error(
-                    "🚨 FAKE VIDEO DETECTED"
-                )
+            if total > 0:
+
+                fake_ratio = fake_sequences / total
+
+                if fake_ratio > 0.70:
+
+                    st.error(
+                        "🚨 FAKE VIDEO DETECTED"
+                    )
+
+                elif fake_ratio < 0.30:
+
+                    st.success(
+                        "✅ REAL VIDEO DETECTED"
+                    )
+
+                else:
+
+                    st.warning(
+                        "⚠️ SUSPICIOUS / UNCERTAIN VIDEO"
+                    )
 
             else:
 
-                st.success(
-                    "✅ REAL VIDEO DETECTED"
+                st.warning(
+                    "No face sequences detected"
                 )
