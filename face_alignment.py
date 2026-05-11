@@ -50,39 +50,87 @@ def align_face(image):
 
     faces = face_detector.detectMultiScale(
         gray,
-        scaleFactor=1.3,
-        minNeighbors=5
+        scaleFactor=1.1,
+        minNeighbors=7
     )
 
+    # No face found
     if len(faces) == 0:
-
-        return image
+        return None
 
     for (x, y, w, h) in faces:
 
+        # Ignore tiny faces
+        if w < 100 or h < 100:
+            continue
+
+        # Crop face
         face = image[y:y+h, x:x+w]
 
         face_gray = gray[y:y+h, x:x+w]
 
+        # -----------------------------
+        # DETECT EYES
+        # -----------------------------
+
         eyes = eye_detector.detectMultiScale(
-            face_gray
+            face_gray,
+            scaleFactor=1.1,
+            minNeighbors=10,
+            minSize=(20, 20)
         )
 
-        # Need minimum 2 eyes
+        # -----------------------------
+        # KEEP ONLY UPPER HALF EYES
+        # -----------------------------
+
+        filtered_eyes = []
+
+        for (ex, ey, ew, eh) in eyes:
+
+            # Ignore lower face detections
+            if ey < h * 0.5:
+
+                filtered_eyes.append(
+                    (ex, ey, ew, eh)
+                )
+
+        eyes = filtered_eyes
+
+        # -----------------------------
+        # ALIGN USING EYES
+        # -----------------------------
+
         if len(eyes) >= 2:
+
+            # Sort left to right
+            eyes = sorted(
+                eyes,
+                key=lambda eye: eye[0]
+            )
 
             eye_1 = eyes[0]
             eye_2 = eyes[1]
 
             # Eye centers
-            x1 = int(eye_1[0] + eye_1[2] / 2)
-            y1 = int(eye_1[1] + eye_1[3] / 2)
+            x1 = int(
+                eye_1[0] + eye_1[2] / 2
+            )
 
-            x2 = int(eye_2[0] + eye_2[2] / 2)
-            y2 = int(eye_2[1] + eye_2[3] / 2)
+            y1 = int(
+                eye_1[1] + eye_1[3] / 2
+            )
+
+            x2 = int(
+                eye_2[0] + eye_2[2] / 2
+            )
+
+            y2 = int(
+                eye_2[1] + eye_2[3] / 2
+            )
 
             # -----------------------------
-            # DRAW GREEN LANDMARKS
+            # DRAW EYE LANDMARKS
             # -----------------------------
 
             cv2.circle(
@@ -101,7 +149,6 @@ def align_face(image):
                 -1
             )
 
-            # Draw eye line
             cv2.line(
                 face,
                 (x1, y1),
@@ -120,6 +167,23 @@ def align_face(image):
                     x2 - x1
                 )
             )
+
+            # -----------------------------
+            # IGNORE BAD ROTATIONS
+            # -----------------------------
+
+            if abs(angle) > 25:
+
+                face = cv2.resize(
+                    face,
+                    (224, 224)
+                )
+
+                return face
+
+            # -----------------------------
+            # ROTATE FACE
+            # -----------------------------
 
             center = (
                 int(w / 2),
@@ -145,7 +209,10 @@ def align_face(image):
 
             return aligned
 
-        # If eyes not found
+        # -----------------------------
+        # IF EYES NOT FOUND
+        # -----------------------------
+
         face = cv2.resize(
             face,
             (224, 224)
@@ -153,7 +220,7 @@ def align_face(image):
 
         return face
 
-    return image
+    return None
 
 # -----------------------------
 # PROCESS FUNCTION
@@ -175,7 +242,6 @@ def process_folder(
             file.endswith(".jpg")
             or file.endswith(".png")
         ):
-
             continue
 
         path = os.path.join(
@@ -192,6 +258,9 @@ def process_folder(
 
         aligned_face = align_face(image)
 
+        if aligned_face is None:
+            continue
+
         save_path = os.path.join(
             output_folder,
             file
@@ -205,7 +274,7 @@ def process_folder(
         print(f"{label} Saved:", file)
 
 # -----------------------------
-# RUN BOTH
+# RUN FOR REAL
 # -----------------------------
 
 process_folder(
@@ -213,6 +282,10 @@ process_folder(
     real_output,
     "REAL"
 )
+
+# -----------------------------
+# RUN FOR FAKE
+# -----------------------------
 
 process_folder(
     fake_input,

@@ -33,7 +33,7 @@ os.makedirs(fake_output_folder, exist_ok=True)
 # FRAME SKIP
 # =========================
 
-frame_skip = 5
+frame_skip = 10
 
 # =========================
 # FRAME EXTRACTION FUNCTION

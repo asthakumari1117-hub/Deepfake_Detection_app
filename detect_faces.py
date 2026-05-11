@@ -23,7 +23,9 @@ os.makedirs(fake_faces_folder, exist_ok=True)
 # LOAD MTCNN MODEL
 # =========================
 
-mtcnn = MTCNN()
+mtcnn = MTCNN(
+    keep_all=True
+)
 
 # =========================
 # FACE DETECTION FUNCTION
@@ -49,29 +51,55 @@ def detect_faces(input_folder, output_folder, label):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # Detect faces
-        boxes, _ = mtcnn.detect(rgb_frame)
+        boxes, probs = mtcnn.detect(rgb_frame)
 
         # If face detected
         if boxes is not None:
 
             for i, box in enumerate(boxes):
 
+                # =========================
+                # CONFIDENCE FILTER
+                # =========================
+
+                confidence = probs[i]
+
+                # Ignore weak detections
+                if confidence < 0.98:
+                    continue
+
                 x1, y1, x2, y2 = box.astype(int)
 
                 # =========================
-                # REMOVE SMALL FALSE FACES
+                # SIZE FILTER
                 # =========================
 
                 width = x2 - x1
                 height = y2 - y1
 
                 # Ignore tiny detections
-                if width < 80 or height < 80:
+                if width < 100 or height < 100:
+                    continue
+
+                # =========================
+                # ASPECT RATIO FILTER
+                # =========================
+
+                ratio = width / height
+
+                # Ignore weird shapes
+                if ratio < 0.6 or ratio > 1.5:
                     continue
 
                 # Prevent negative coordinates
                 x1 = max(0, x1)
                 y1 = max(0, y1)
+
+                # Crop face
+                face = frame[y1:y2, x1:x2]
+
+                if face.size == 0:
+                    continue
 
                 # Draw rectangle
                 cv2.rectangle(
@@ -82,13 +110,7 @@ def detect_faces(input_folder, output_folder, label):
                     2
                 )
 
-                # Crop face
-                face = frame[y1:y2, x1:x2]
-
-                if face.size == 0:
-                    continue
-
-                # Save cropped face
+                # Save face
                 face_path = os.path.join(
                     output_folder,
                     f"{frame_name}_face_{i}.jpg"
@@ -104,6 +126,8 @@ def detect_faces(input_folder, output_folder, label):
         # Press Q to quit
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+    cv2.destroyAllWindows()
 
 # =========================
 # PROCESS REAL FRAMES
@@ -124,7 +148,5 @@ detect_faces(
     fake_faces_folder,
     "FAKE"
 )
-
-cv2.destroyAllWindows()
 
 print("\nALL FACE DETECTION COMPLETED")
